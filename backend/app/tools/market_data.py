@@ -52,6 +52,7 @@ class MarketDataProvider:
         if self.is_crypto_ticker(symbol):
             coin_id = self.CRYPTO_IDS[symbol]
             url = f"https://api.coingecko.com/api/v3/coins/markets?ids={coin_id}&vs_currency=usd&price_change_percentage=24h&sparkline=false"
+            history = self._build_crypto_history(symbol)
             try:
                 response = httpx.get(url, timeout=10.0)
                 response.raise_for_status()
@@ -69,6 +70,7 @@ class MarketDataProvider:
                     "volume_24h_usd": float(entry.get("total_volume")) if entry.get("total_volume") is not None else None,
                     "volatility_24h": abs(float(entry.get("price_change_percentage_24h"))) if entry.get("price_change_percentage_24h") is not None else None,
                     "asset_type": "crypto",
+                    "history": history,
                 }
             except Exception:
                 return {
@@ -81,6 +83,7 @@ class MarketDataProvider:
                     "volume_24h_usd": None,
                     "volatility_24h": None,
                     "asset_type": "crypto",
+                    "history": history,
                 }
 
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1mo&interval=1d"
@@ -92,11 +95,13 @@ class MarketDataProvider:
             meta = result.get("meta", {})
             quote = result.get("indicators", {}).get("quote", [{}])[0]
             closes = quote.get("close") or []
+            timestamps = result.get("timestamp") or []
             current_price = closes[-1] if closes else None
             price = float(current_price) if current_price is not None else None
             change_percent = meta.get("regularMarketChangePercent")
             as_of = meta.get("regularMarketTime")
             as_of_iso = datetime.fromtimestamp(as_of, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if as_of else None
+            history = self._build_equity_history(timestamps, closes)
             return {
                 "price": price,
                 "currency": meta.get("currency"),
@@ -104,6 +109,7 @@ class MarketDataProvider:
                 "as_of": as_of_iso,
                 "source": "Yahoo Finance",
                 "asset_type": "equity",
+                "history": history,
             }
         except Exception:
             return {
@@ -113,7 +119,43 @@ class MarketDataProvider:
                 "as_of": None,
                 "source": "Market data unavailable",
                 "asset_type": "equity",
+                "history": [],
             }
+
+    def _build_equity_history(self, timestamps: list[Any], closes: list[Any]) -> list[dict[str, Any]]:
+        history: list[dict[str, Any]] = []
+        for timestamp, close in zip(timestamps, closes):
+            if timestamp is None or close is None:
+                continue
+            history.append(
+                {
+                    "timestamp": datetime.fromtimestamp(int(timestamp), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "close": float(close),
+                }
+            )
+        return history
+
+    def _build_crypto_history(self, symbol: str) -> list[dict[str, Any]]:
+        coin_id = self.CRYPTO_IDS[symbol]
+        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=30&interval=daily"
+        try:
+            response = httpx.get(url, timeout=10.0)
+            response.raise_for_status()
+            payload = response.json()
+            prices = payload.get("prices", [])
+            history: list[dict[str, Any]] = []
+            for timestamp_ms, close in prices:
+                if timestamp_ms is None or close is None:
+                    continue
+                history.append(
+                    {
+                        "timestamp": datetime.fromtimestamp(float(timestamp_ms) / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "close": float(close),
+                    }
+                )
+            return history
+        except Exception:
+            return []
 
     def fetch_news(self, ticker: str) -> list[dict[str, Any]]:
         symbol = (ticker or "").strip().upper()

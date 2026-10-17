@@ -41,6 +41,7 @@ class MarketSnapshot(BaseModel):
     volume_24h_usd: float | None = None
     volatility_24h: float | None = None
     asset_type: str | None = None
+    history: list[dict[str, Any]] = []
 
 
 class KeyPoint(BaseModel):

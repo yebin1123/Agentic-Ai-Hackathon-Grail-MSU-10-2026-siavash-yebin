@@ -1,7 +1,7 @@
 import sampleStockAnalysis from '../mocks/sample-stock-analysis.json'
 import type { ApiErrorResponse, StockAnalysisRequest, StockAnalysisResponse } from '../types/stockAnalysis'
 
-const USE_MOCK_DATA = true
+const USE_MOCK_DATA = false
 const sampleResponse = sampleStockAnalysis as StockAnalysisResponse
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

@@ -51,7 +51,8 @@
 
 .card--answer,
 .card--warnings,
-.card--sources {
+.card--sources,
+.card--chart {
   grid-column: 1 / -1;
 }
 
@@ -264,6 +265,13 @@
   min-height: 120px;
 }
 
+.form-help-text {
+  margin: -0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .primary-button {
   border: none;
   border-radius: 14px;
@@ -285,6 +293,30 @@
   opacity: 0.7;
 }
 
+.chart-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chart-axis-labels,
+.chart-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.price-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.9), rgba(248, 250, 252, 0.9));
+  border: 1px solid var(--border-soft);
+}
+
 @media (max-width: 900px) {
   .hero-panel,
   .results-grid,
@@ -296,7 +328,8 @@
   .card,
   .card--answer,
   .card--warnings,
-  .card--sources {
+  .card--sources,
+  .card--chart {
     grid-column: 1 / -1;
   }
 

@@ -138,7 +138,7 @@ class ResearchBuddyService:
             ]
 
         source_entries: list[Source] = []
-        if snapshot.get("source"):
+        if snapshot.get("source") and snapshot.get("price") is not None:
             source_entries.append(
                 Source(
                     title=f"{snapshot['source']} quote snapshot",

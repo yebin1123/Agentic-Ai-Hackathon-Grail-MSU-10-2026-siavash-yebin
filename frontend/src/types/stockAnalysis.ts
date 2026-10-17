@@ -9,6 +9,14 @@ export type MarketSnapshot = {
   change_percent: number | null
   as_of: string | null
   source: string | null
+  market_cap_usd?: number | null
+  volume_24h_usd?: number | null
+  volatility_24h?: number | null
+  asset_type?: string | null
+  history?: Array<{
+    timestamp: string
+    close: number
+  }>
 }
 
 export type KeyPoint = {
