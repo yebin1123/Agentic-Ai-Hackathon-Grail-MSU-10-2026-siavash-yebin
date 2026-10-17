@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StockAnalysisRequest(BaseModel):
@@ -30,11 +30,17 @@ class StockAnalysisRequest(BaseModel):
 
 
 class MarketSnapshot(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     price: float | None = None
     currency: str | None = None
     change_percent: float | None = None
     as_of: str | None = None
     source: str | None = None
+    market_cap_usd: float | None = None
+    volume_24h_usd: float | None = None
+    volatility_24h: float | None = None
+    asset_type: str | None = None
 
 
 class KeyPoint(BaseModel):
