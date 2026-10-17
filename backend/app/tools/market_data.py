@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import csv
 import re
 from datetime import datetime, timezone
+from io import StringIO
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -21,6 +23,7 @@ class MarketDataProvider:
         "ETH": "Ethereum",
         "SOL": "Solana",
     }
+
     CRYPTO_IDS = {
         "BTC": "bitcoin",
         "ETH": "ethereum",
@@ -29,6 +32,20 @@ class MarketDataProvider:
         "DOGE": "dogecoin",
         "XRP": "ripple",
         "BNB": "binancecoin",
+    }
+
+    CRYPTO_BINANCE_SYMBOLS = {
+        "BTC": "BTCUSDT",
+        "ETH": "ETHUSDT",
+        "SOL": "SOLUSDT",
+        "ADA": "ADAUSDT",
+        "DOGE": "DOGEUSDT",
+        "XRP": "XRPUSDT",
+        "BNB": "BNBUSDT",
+    }
+
+    DEFAULT_HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36"
     }
 
     def is_valid_ticker(self, ticker: str) -> bool:
@@ -50,15 +67,24 @@ class MarketDataProvider:
     def fetch_market_snapshot(self, ticker: str) -> dict[str, Any]:
         symbol = (ticker or "").strip().upper()
         if self.is_crypto_ticker(symbol):
-            coin_id = self.CRYPTO_IDS[symbol]
-            url = f"https://api.coingecko.com/api/v3/coins/markets?ids={coin_id}&vs_currency=usd&price_change_percentage=24h&sparkline=false"
-            history = self._build_crypto_history(symbol)
-            try:
-                response = httpx.get(url, timeout=10.0)
-                response.raise_for_status()
-                data = response.json()
-                if not data:
-                    raise ValueError("No crypto market data returned")
+            return self._fetch_crypto_snapshot(symbol)
+        return self._fetch_equity_snapshot(symbol)
+
+    def _fetch_crypto_snapshot(self, symbol: str) -> dict[str, Any]:
+        history = self._build_crypto_history(symbol)
+
+        # Try CoinGecko first for richer metadata
+        coin_id = self.CRYPTO_IDS[symbol]
+        coingecko_url = (
+            f"https://api.coingecko.com/api/v3/coins/markets"
+            f"?ids={coin_id}&vs_currency=usd&price_change_percentage=24h&sparkline=false"
+        )
+
+        try:
+            response = httpx.get(coingecko_url, headers=self.DEFAULT_HEADERS, timeout=2.5)
+            response.raise_for_status()
+            data = response.json()
+            if data:
                 entry = data[0]
                 return {
                     "price": float(entry.get("current_price")) if entry.get("current_price") is not None else None,
@@ -72,23 +98,65 @@ class MarketDataProvider:
                     "asset_type": "crypto",
                     "history": history,
                 }
-            except Exception:
-                return {
-                    "price": None,
-                    "currency": "USD",
-                    "change_percent": None,
-                    "as_of": None,
-                    "source": "CoinGecko unavailable",
-                    "market_cap_usd": None,
-                    "volume_24h_usd": None,
-                    "volatility_24h": None,
-                    "asset_type": "crypto",
-                    "history": history,
-                }
+        except Exception:
+            pass
 
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1mo&interval=1d"
+        # Fallback: Coinbase spot + Binance 24h stats
         try:
-            response = httpx.get(url, timeout=8.0)
+            coinbase_url = f"https://api.coinbase.com/v2/prices/{symbol}-USD/spot"
+            coinbase_response = httpx.get(coinbase_url, headers=self.DEFAULT_HEADERS, timeout=2.5)
+            coinbase_response.raise_for_status()
+            coinbase_data = coinbase_response.json()
+            price = float(coinbase_data["data"]["amount"])
+
+            volume_24h_usd = None
+            change_percent = None
+            volatility_24h = None
+
+            binance_symbol = self.CRYPTO_BINANCE_SYMBOLS.get(symbol)
+            if binance_symbol:
+                try:
+                    ticker_24h_url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={binance_symbol}"
+                    ticker_24h_response = httpx.get(ticker_24h_url, headers=self.DEFAULT_HEADERS, timeout=2.5)
+                    ticker_24h_response.raise_for_status()
+                    ticker_24h = ticker_24h_response.json()
+                    change_percent = float(ticker_24h["priceChangePercent"]) if ticker_24h.get("priceChangePercent") is not None else None
+                    volume_24h_usd = float(ticker_24h["quoteVolume"]) if ticker_24h.get("quoteVolume") is not None else None
+                    volatility_24h = abs(change_percent) if change_percent is not None else None
+                except Exception:
+                    pass
+
+            return {
+                "price": price,
+                "currency": "USD",
+                "change_percent": change_percent,
+                "as_of": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "source": "Coinbase",
+                "market_cap_usd": None,
+                "volume_24h_usd": volume_24h_usd,
+                "volatility_24h": volatility_24h,
+                "asset_type": "crypto",
+                "history": history,
+            }
+        except Exception:
+            return {
+                "price": None,
+                "currency": "USD",
+                "change_percent": None,
+                "as_of": None,
+                "source": "Crypto market data unavailable",
+                "market_cap_usd": None,
+                "volume_24h_usd": None,
+                "volatility_24h": None,
+                "asset_type": "crypto",
+                "history": history,
+            }
+
+    def _fetch_equity_snapshot(self, symbol: str) -> dict[str, Any]:
+        yahoo_url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1mo&interval=1d"
+
+        try:
+            response = httpx.get(yahoo_url, headers=self.DEFAULT_HEADERS, timeout=2.5)
             response.raise_for_status()
             payload = response.json()
             result = payload.get("chart", {}).get("result", [{}])[0]
@@ -100,14 +168,56 @@ class MarketDataProvider:
             price = float(current_price) if current_price is not None else None
             change_percent = meta.get("regularMarketChangePercent")
             as_of = meta.get("regularMarketTime")
-            as_of_iso = datetime.fromtimestamp(as_of, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if as_of else None
+            as_of_iso = (
+                datetime.fromtimestamp(as_of, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                if as_of
+                else None
+            )
             history = self._build_equity_history(timestamps, closes)
+
             return {
                 "price": price,
                 "currency": meta.get("currency"),
                 "change_percent": float(change_percent) if change_percent is not None else None,
                 "as_of": as_of_iso,
                 "source": "Yahoo Finance",
+                "asset_type": "equity",
+                "history": history,
+            }
+        except Exception:
+            pass
+
+        # Fallback: Stooq daily CSV
+        try:
+            stooq_symbol = f"{symbol.lower()}.us"
+            stooq_url = f"https://stooq.com/q/d/l/?s={stooq_symbol}&i=d"
+            response = httpx.get(stooq_url, headers=self.DEFAULT_HEADERS, timeout=2.5)
+            response.raise_for_status()
+
+            rows = list(csv.DictReader(StringIO(response.text)))
+            rows = [row for row in rows if row.get("Close") and row["Close"] != "N/D"]
+            if not rows:
+                raise ValueError("No Stooq rows available")
+
+            history = []
+            for row in rows[-30:]:
+                history.append(
+                    {
+                        "timestamp": f"{row['Date']}T00:00:00Z",
+                        "close": float(row["Close"]),
+                    }
+                )
+
+            latest = history[-1]["close"]
+            previous = history[-2]["close"] if len(history) > 1 else None
+            change_percent = ((latest - previous) / previous * 100) if previous else None
+
+            return {
+                "price": latest,
+                "currency": "USD",
+                "change_percent": round(change_percent, 2) if change_percent is not None else None,
+                "as_of": history[-1]["timestamp"],
+                "source": "Stooq",
                 "asset_type": "equity",
                 "history": history,
             }
@@ -136,21 +246,24 @@ class MarketDataProvider:
         return history
 
     def _build_crypto_history(self, symbol: str) -> list[dict[str, Any]]:
-        coin_id = self.CRYPTO_IDS[symbol]
-        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=30&interval=daily"
+        binance_symbol = self.CRYPTO_BINANCE_SYMBOLS.get(symbol)
+        if not binance_symbol:
+            return []
+
         try:
-            response = httpx.get(url, timeout=10.0)
+            url = f"https://api.binance.com/api/v3/klines?symbol={binance_symbol}&interval=1d&limit=30"
+            response = httpx.get(url, headers=self.DEFAULT_HEADERS, timeout=2.5)
             response.raise_for_status()
-            payload = response.json()
-            prices = payload.get("prices", [])
+            klines = response.json()
+
             history: list[dict[str, Any]] = []
-            for timestamp_ms, close in prices:
-                if timestamp_ms is None or close is None:
-                    continue
+            for row in klines:
+                open_time_ms = row[0]
+                close_price = row[4]
                 history.append(
                     {
-                        "timestamp": datetime.fromtimestamp(float(timestamp_ms) / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "close": float(close),
+                        "timestamp": datetime.fromtimestamp(float(open_time_ms) / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "close": float(close_price),
                     }
                 )
             return history
@@ -161,18 +274,16 @@ class MarketDataProvider:
         symbol = (ticker or "").strip().upper()
         search_term = f"{symbol} crypto" if self.is_crypto_ticker(symbol) else f"{symbol} stock"
         sources = [
-            ("Yahoo Finance", f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US"),
             ("Google News", f"https://news.google.com/rss/search?q={search_term}&hl=en-US&gl=US&ceid=US:en"),
-            ("MarketWatch", "https://feeds.marketwatch.com/marketwatch/topstories/"),
         ]
         collected: list[dict[str, Any]] = []
 
         for publisher, url in sources:
             try:
-                response = httpx.get(url, timeout=8.0)
+                response = httpx.get(url, headers=self.DEFAULT_HEADERS, timeout=2.5)
                 response.raise_for_status()
                 root = ET.fromstring(response.text)
-                for item in root.findall(".//item")[:3]:
+                for item in root.findall(".//item")[:5]:
                     title = (item.findtext("title") or "Market news").strip()
                     link = item.findtext("link") or item.findtext("guid") or "https://example.com"
                     published = item.findtext("pubDate") or None
@@ -187,8 +298,6 @@ class MarketDataProvider:
                     )
             except Exception:
                 continue
-            if len(collected) >= 5:
-                break
 
         unique: list[dict[str, Any]] = []
         seen: set[str] = set()
