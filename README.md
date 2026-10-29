@@ -75,7 +75,7 @@ My list of what I'd do next is in [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
 
 I started this with Siavash at the Agentic AI Hackathon (Grail / MSU, October 2026). He built the first backend prototype, the FastAPI skeleton and an early research service, which got us going and gave the project the layout it still uses. I built the frontend, and since the hackathon I've done the rest: reworking it into a crypto-only app, the data layer with its fallback and caching, asset search, the Gemini chat, and the tests, CI and tooling. The commit history shows the details.
 
-I use AI coding assistance (Claude Code) on this project. I review the changes and I'm responsible for the code.
+I use Claude Code as a pair programmer on this project. I make the design decisions and review every change before it merges; Claude Code drafts much of the code. Backend and frontend tests, plus CI on every pull request, check the changes.
 
 ## License
 
