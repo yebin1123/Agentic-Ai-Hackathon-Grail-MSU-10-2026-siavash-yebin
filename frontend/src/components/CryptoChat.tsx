@@ -51,6 +51,7 @@ export function CryptoChat({ completedAsset = null }: CryptoChatProps) {
   const [configAttempt, setConfigAttempt] = useState(0)
   const [question, setQuestion] = useState('')
   const [assetConsentId, setAssetConsentId] = useState<string | null>(null)
+  const [consentAssetKey, setConsentAssetKey] = useState(completedAsset?.id)
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +59,11 @@ export function CryptoChat({ completedAsset = null }: CryptoChatProps) {
   const generation = useRef(0)
   const headingId = `${id}-heading`
   const limit = Math.min(CHAT_QUESTION_LIMIT, config?.max_question_chars ?? CHAT_QUESTION_LIMIT)
+  // Asset-context consent is per analysis: forget it whenever the analyzed asset changes.
+  if (consentAssetKey !== completedAsset?.id) {
+    setConsentAssetKey(completedAsset?.id)
+    setAssetConsentId(null)
+  }
   const assetEnabled = !!completedAsset && assetConsentId === completedAsset.id
   const available = !!config?.enabled && !configLoading && !configError
   const busy = pendingQuestion !== null
@@ -67,8 +73,6 @@ export function CryptoChat({ completedAsset = null }: CryptoChatProps) {
 
   useEffect(() => {
     const controller = new AbortController()
-    setConfigLoading(true)
-    setConfigError(null)
     void getChatConfig(controller.signal).then((value) => {
       if (!controller.signal.aborted) setConfig(value)
     }).catch((reason: unknown) => {
@@ -87,7 +91,11 @@ export function CryptoChat({ completedAsset = null }: CryptoChatProps) {
     requestRef.current?.abort()
   }, [])
 
-  useEffect(() => { setAssetConsentId(null) }, [completedAsset?.id])
+  function retryConfig() {
+    setConfigLoading(true)
+    setConfigError(null)
+    setConfigAttempt((value) => value + 1)
+  }
 
   function cancel() {
     generation.current += 1
@@ -154,7 +162,7 @@ export function CryptoChat({ completedAsset = null }: CryptoChatProps) {
         <p className="meta-copy">Provider: Gemini; model: {config?.model ?? 'Not configured'}; chat: {config?.enabled ? 'Enabled' : 'Unavailable'}; profile sharing: Disabled for free tier.</p>
         {!config?.enabled && <p className="form-help-text">Ask the operator to configure the server-side GEMINI_API_KEY and model, confirm free-tier use with provider billing disabled, and enable chat, then retry configuration. Never enter an API key here.</p>}
       </>}
-      <button className="text-button" type="button" disabled={configLoading || busy} onClick={() => setConfigAttempt((value) => value + 1)}>Retry configuration</button>
+      <button className="text-button" type="button" disabled={configLoading || busy} onClick={retryConfig}>Retry configuration</button>
       <p className="form-help-text">This checks configuration only; it does not test the live model.</p>
     </div>
     <div className="chat-history" role="log" aria-label="Chat conversation" aria-live="polite" aria-relevant="additions" aria-busy={busy}>

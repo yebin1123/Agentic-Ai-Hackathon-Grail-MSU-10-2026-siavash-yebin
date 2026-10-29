@@ -6,7 +6,7 @@ Findings from a read-through of the repo. Items marked **done** were applied in 
 - Removed dead stock-era backend/frontend code and the stale stock tests (4 of them were failing against the 410 route).
 - Untracked `.idea/` and the hackathon zip.
 - Added `lint`/`typecheck` scripts, `requirements-dev.txt`, `.env.example`, CI, `CLAUDE.md`.
-- Tightened `Risk.severity` to a union type, trimmed `FRONTEND_ORIGINS`, restricted CORS headers to `Content-Type` (with tests), fixed two lint warnings.
+- Tightened `Risk.severity` to a union type, trimmed `FRONTEND_ORIGINS`, restricted CORS headers to `Content-Type` (with tests), fixed all lint warnings by moving state resets out of effects and into event handlers (a shared data-fetching hook would still remove the repeated abort/version logic).
 
 ## Proposals
 
@@ -18,7 +18,6 @@ Findings from a read-through of the repo. Items marked **done** were applied in 
 6. **`VITE_API_BASE_URL`** for deployments without a same-origin `/api` proxy.
 
 ### Medium
-6b. **Remaining 7 lint warnings** (`set-state-in-effect`): effects that set "loading" state when a fetch starts (`App.tsx`, `AssetPicker.tsx`, `PriceChart.tsx`, `CryptoChat.tsx`, `AnalysisForm.tsx`). A small shared data-fetching hook (or TanStack Query) would remove most of them and the duplicated abort/version logic.
 7. **Cache chart history** per `(asset, timeframe)` and keep the old chart visible while a new timeframe loads (currently flashes empty).
 8. **Generate frontend types from `/openapi.json`** (or validate with zod) to stop hand-maintained drift.
 9. **Settings class + `Depends` services** instead of module-level singletons mutated in the lifespan.

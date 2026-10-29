@@ -35,8 +35,6 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController()
-    setAssetsLoading(true)
-    setAssetsError(null)
     void getAssets(controller.signal).then((catalog) => {
       if (!controller.signal.aborted) setAssets(catalog)
     }).catch((err: unknown) => {
@@ -51,6 +49,12 @@ function App() {
     requestVersion.current += 1
     analysisController.current?.abort()
   }, [])
+
+  const retryAssets = () => {
+    setAssetsLoading(true)
+    setAssetsError(null)
+    setCatalogAttempt((attempt) => attempt + 1)
+  }
 
   const cancelAnalysis = () => {
     requestVersion.current += 1
@@ -90,7 +94,7 @@ function App() {
           <div className="fin-introduction"><Dolphin /><div><strong>Hi, I'm Fin.</strong><p>I help you explore the data.<br />You stay at the helm.</p></div></div>
           <div className="hero-features"><span>Source-backed context</span><span>Independent price history</span><span>Crypto only</span></div>
         </div>
-        <AnalysisForm assets={assets} assetsLoading={assetsLoading} assetsError={assetsError} onRetryAssets={() => setCatalogAttempt((attempt) => attempt + 1)} onSubmit={handleAnalyze} onCancel={cancelAnalysis} isLoading={isLoading} lastSubmitted={lastSubmitted} onProfileChange={setDraftProfile} onProfileReset={() => setProfileResetGeneration((value) => value + 1)} />
+        <AnalysisForm assets={assets} assetsLoading={assetsLoading} assetsError={assetsError} onRetryAssets={retryAssets} onSubmit={handleAnalyze} onCancel={cancelAnalysis} isLoading={isLoading} lastSubmitted={lastSubmitted} onProfileChange={setDraftProfile} onProfileReset={() => setProfileResetGeneration((value) => value + 1)} />
       </section>
       <aside className="disclosure"><span className="disclosure-icon" aria-hidden="true">i</span><p><strong>Deterministic snapshot dashboard.</strong> Research cards use snapshot data, not a live AI model or financial advice. Optional Gemini free-tier chat is separate and labeled with its configuration below; local research profiles are never sent to free chat.</p></aside>
       {isLoading && <LoadingState />}

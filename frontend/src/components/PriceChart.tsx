@@ -21,9 +21,6 @@ export function PriceChart({ asset }: { asset: Asset }) {
   useEffect(() => {
     const controller = new AbortController()
     activeController.current = controller
-    setLoading(true)
-    setHistory(null)
-    setError(null)
     void getCryptoHistory(asset.id, timeframe, controller.signal).then((response) => {
       if (!controller.signal.aborted) setHistory(response)
     }).catch((err: unknown) => {

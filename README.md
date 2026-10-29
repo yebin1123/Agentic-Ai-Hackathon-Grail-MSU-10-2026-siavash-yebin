@@ -102,3 +102,7 @@ See `crypto_research_buddy_contract.md` for the updated API and metric definitio
 ## Known limitations
 
 No production authentication, distributed quota, personalized allocation/suitability engine, primary-document retrieval, full-article news synthesis, DEX-only asset lookup, on-chain analytics, real-time streaming, unlock calendar, order-book depth, wallet integration or background alerts. DefiLlama, DEX Screener, GoPlus, Moralis and Alchemy are researched options, not connected in this release. Hosted chat code is implemented but no live model call was performed. Data access depends on provider/network availability. One-year history may require a paid CoinGecko tier or use Coinbase fallback; incomplete coverage is disclosed. Volume and FDV are provider reports, not proof of liquidity or intrinsic value. Historical drawdown uses returned samples and can understate intraperiod loss. Realized volatility is proposed, not implemented.
+
+## License
+
+[MIT](LICENSE)
