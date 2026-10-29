@@ -30,7 +30,7 @@ Requirements: Python 3.11+ and Node **20.19+ or 22.12+** (a current Node LTS is 
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -43,7 +43,7 @@ Optional: before starting Uvicorn, export `COINGECKO_DEMO_API_KEY` or `COINGECKO
 3. Set `GEMINI_FREE_TIER_CONFIRMED=true` **only after checking that the project has billing disabled**. The app cannot inspect Google project billing; this is an operator declaration, not automatic proof of zero cost.
 4. Restart the backend, then click **Retry configuration** in the chat panel.
 
-Current allowlisted/default model: `gemini-3.8-flash`, listed with free input/output on Google's pricing page when checked2026-10-28. Optional `GEMINI_MODEL` may only select an allowlisted free model. Unsupported/paid models are rejected; there is no paid OpenAI fallback. Availability can change, and a billing-enabled project could incur charges even for the same model. Keep billing disabled to use unpaid quotas.
+Current allowlisted/default model: `gemini-3.8-flash`, listed with free input/output on Google's pricing page when checked 2026-10-28. Optional `GEMINI_MODEL` may only select an allowlisted free model. Unsupported/paid models are rejected; there is no paid OpenAI fallback. Availability can change, and a billing-enabled project could incur charges even for the same model. Keep billing disabled to use unpaid quotas.
 
 Non-secret backend settings:
 
