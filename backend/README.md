@@ -1,49 +1,74 @@
-# Fin Crypto Research Backend
+# Fin backend
 
-This backend implements the crypto-only API in `../crypto_research_buddy_contract.md`. Snapshot research uses transparent rules; separate Gemini free-tier chat requires a key and operator confirmation of an unpaid project with billing disabled. No live model call was performed during implementation/testing. No paid-provider fallback exists.
+A FastAPI service that gathers crypto market data and serves it to the frontend. The API contract is in [`../crypto_research_buddy_contract.md`](../crypto_research_buddy_contract.md).
 
-## Features
-- `GET /api/v1/health`
-- `GET /api/v1/assets`
-- `GET /api/v1/assets/search?q=...` and `GET /api/v1/assets/{asset_id}`
-- `GET /api/v1/chat/config` and `POST /api/v1/chat`
-- `POST /api/v1/crypto-analysis`
-- `GET /api/v1/crypto-history/{asset_id}?timeframe=1d|1w|1m|1y`
-- Provider-backed canonical crypto identity validation and candidate selection; eight featured defaults, not eight-only coverage
-- Qualitative profiles/context echo and attributed snapshot strengths/concerns/unknowns
-- CoinGecko aggregate metrics; Coinbase Exchange USD fallback quotes/history
-- Headlines via Google News RSS; no claim that full articles were read
-- Parallel retrieval, pooled async HTTP, bounded deadlines and a short cache
-- Missing values and coverage limitations disclosed; no hardcoded macro/volatility figures
+## Endpoints
 
-## Run locally
+All under `/api/v1`.
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
+| Method and path | What it does |
+|---|---|
+| `GET /health` | Liveness check |
+| `GET /assets` | The eight featured coins |
+| `GET /assets/search?q=` | Search CoinGecko for candidates |
+| `GET /assets/{id}` | Full identity for one coin, including chains and contracts |
+| `POST /crypto-analysis` | Snapshot, topic answers, risks, sources and notes for a coin and question |
+| `GET /crypto-history/{id}?timeframe=1d\|1w\|1m\|1y` | USD price history with coverage info, period change and max drawdown |
+| `GET /chat/config`, `POST /chat` | The optional Gemini chat |
 
-Then test:
+Errors always come back as `{"error": {"code", "message", "request_id"}}`. The old `/stock-analysis` route returns 410.
+
+## Layout
+
+`routes` (HTTP) → `schemas` (Pydantic) → `services` (logic) → `tools` (data providers). `tools/crypto_data.py` talks to CoinGecko, Coinbase Exchange and Google News RSS. `services/crypto_research.py` builds the rule-based answers, and `services/crypto_chat.py` is the only code that calls Gemini.
+
+## Run it
 
 ```bash
-curl http://localhost:8000/api/v1/health
-curl -X POST http://localhost:8000/api/v1/crypto-analysis \
-  -H "Content-Type: application/json" \
-  -d '{"asset_id":"bitcoin","question":"What should I investigate about token supply and liquidity?"}'
-curl 'http://localhost:8000/api/v1/crypto-history/bitcoin?timeframe=1w'
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-## Notes
-- Optionally export `COINGECKO_DEMO_API_KEY` or `COINGECKO_PRO_API_KEY` before running. No automatic `.env` loading; never share your key in chat or browser code.
-- Cache TTL: quotes 60s, news 300s, history 120–300s. Cache includes unavailable responses to prevent repeated provider hammering.
-- Market HTTP requests have a 4s wall-clock limit; analysis/history have a 14s deadline. Chat has a separate 45s deadline, 30s model-call timeout, dedicated two-connection model pool and two-call admission limit.
-- Export `GEMINI_API_KEY` and `GEMINI_FREE_TIER_CONFIRMED=true` only after verifying an unpaid project with billing disabled. `GEMINI_MODEL` defaults to allowlisted `gemini-3.8-flash`; non-allowlisted models are rejected. Config GET makes no hosted call. Old OpenAI keys are ignored. The code cannot inspect Google billing; do not enable billing to work around quota failures.
-- `CHAT_DAILY_REQUEST_LIMIT` defaults20 attempts/process/UTC day;0 disables. Failures count, restart resets and workers are separate. Completion limit4096 tokens/no retries is a demo resource guard, not account-billing verification or a shared quota.
-- Native Gemini generateContent uses header-only API key, JSON Schema output and validated source IDs. HTTP429 is quota/rate unavailable without retry/fallback. Profile sharing is disabled: any non-null `profile` or `share_profile:true` chat request is rejected. Questions/history may be used for Google product improvement/human review; do not submit personal/confidential data. Snapshot profile personalization remains available. Scope/claim support still needs real-model evaluation.
-- Coinbase volume is base units, so USD volume remains null in the fallback; aggregate market cap/FDV are also unavailable there.
-- Quote time is never replaced with retrieval time. Coinbase stats do not expose a quote event timestamp.
-- Run `python -m pytest -q` inside backend. Tests do not make real network calls.
-- Backend dependencies use compatible minimum ranges; record resolved versions for a production lockfile. This remains a research prototype, not a hardened public API.
+```bash
+curl localhost:8000/api/v1/health
+curl 'localhost:8000/api/v1/crypto-history/bitcoin?timeframe=1w'
+curl -X POST localhost:8000/api/v1/crypto-analysis -H "Content-Type: application/json" \
+  -d '{"asset_id":"bitcoin","question":"What should I check about supply and liquidity?"}'
+```
+
+Tests: `python -m pytest -q`. They never touch the network, because a fixture blocks every real HTTP transport.
+
+## Configuration
+
+The app reads environment variables only. It doesn't load `.env` files. A template is in `.env.example`.
+
+| Variable | Purpose |
+|---|---|
+| `COINGECKO_DEMO_API_KEY`, `COINGECKO_PRO_API_KEY` | Optional CoinGecko keys (Pro wins if both are set) |
+| `FRONTEND_ORIGINS` | Comma-separated CORS origins (defaults to the local dev server) |
+| `GEMINI_API_KEY` | Enables the chat, together with the next variable |
+| `GEMINI_FREE_TIER_CONFIRMED` | Must be exactly `true`. It's my declaration that the project is unpaid with billing off. The code can't check that. |
+| `GEMINI_MODEL` | Must be on the allowlist (`gemini-3.8-flash`) |
+| `CHAT_DAILY_REQUEST_LIMIT` | Model calls per process per UTC day. Default 20, and 0 or an invalid value disables the chat. |
+
+## How it behaves
+
+- **Caching:** quotes 60s, news 300s, history 120 to 300s. Concurrent requests for the same key share one provider call. The cache holds at most 128 entries.
+- **Deadlines:** each provider request has 4 seconds, and analysis and history have 14. The chat has 45 seconds overall.
+- **Providers:** CoinGecko is primary. Coinbase Exchange is a fallback for the eight featured coins only, using a hand-written ID map instead of guessing from tickers. The fallback has no market cap, FDV or USD volume, and the response says so.
+- **Honesty about data:** quote times are never replaced with retrieval times. News is headlines only, and the app doesn't claim to have read the articles.
+
+## The chat
+
+One Gemini call per question, with these safeguards:
+
+- strict JSON schema output
+- every cited source ID must exist in the evidence I retrieved
+- no tools, and no URL fetching
+- the API key is checked against the context and the output
+- user text and history are treated as data, not instructions
+- two concurrent calls at most, and a daily cap
+- the research profile is never accepted. Any request that includes one is rejected.
+
+Limits: a citation proves the source exists, not that it supports the claim, and I haven't run the chat against a live model yet. The daily cap resets on restart and isn't shared across workers. Free-tier prompts may be used by Google to improve its products, so don't send personal data.

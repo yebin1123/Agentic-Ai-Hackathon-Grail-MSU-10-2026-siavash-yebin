@@ -39,13 +39,7 @@ export function AssetPicker({ assets, selected, disabled, assetsLoading, onSelec
     const controller = new AbortController()
     searchController.current = controller
     const q = query.trim()
-    setCandidates([])
-    setWarnings([])
-    setSearching(false)
-    setSearchStatus(q && q.length < 2 ? 'Enter at least 2 characters to search.' : '')
     if (q.length < 2 || q.length > 100) return () => controller.abort()
-    setSearching(true)
-    setSearchStatus('Searching the provider catalog...')
     const timer = window.setTimeout(() => {
       void searchAssets(q, controller.signal).then((response) => {
         if (controller.signal.aborted || version !== searchVersion.current) return
@@ -108,7 +102,12 @@ export function AssetPicker({ assets, selected, disabled, assetsLoading, onSelec
     <input id="asset-search" className="form-input" type="search" value={query} maxLength={100} disabled={disabled} autoComplete="off" aria-describedby="search-coverage search-status" onChange={(event) => {
       searchVersion.current += 1
       searchController.current?.abort()
+      const q = event.target.value.trim()
+      const searchable = q.length >= 2 && q.length <= 100
       setCandidates([])
+      setWarnings([])
+      setSearching(searchable)
+      setSearchStatus(searchable ? 'Searching the provider catalog...' : q && q.length < 2 ? 'Enter at least 2 characters to search.' : '')
       setQuery(event.target.value)
     }} />
     <p id="search-coverage" className="form-help-text">Broad provider catalog search, not a guarantee of every token. Data coverage, contracts, and history vary; verify the ID and chain before selecting. Searching does not change your selection.</p>

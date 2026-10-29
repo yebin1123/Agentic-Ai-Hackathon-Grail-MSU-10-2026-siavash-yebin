@@ -29,13 +29,18 @@ async def lifespan(app):
                 service.provider.client = None
 
 
+def frontend_origins() -> list[str]:
+    raw = os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 app = FastAPI(title="Fin Crypto Research API", version="0.5.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","),
+    allow_origins=frontend_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type"],
 )
 app.include_router(router)
 app.include_router(chat_router)

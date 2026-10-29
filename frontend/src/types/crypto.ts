@@ -37,7 +37,7 @@ export type AnswerSection = {
   status: 'answered' | 'limited' | 'unsupported'
   limitation: string | null
 }
-export type Risk = { title: string; detail: string; severity: string }
+export type Risk = { title: string; detail: string; severity: 'low' | 'medium' | 'high' | 'unknown' }
 export type Source = {
   source_id?: string | null
   title: string

@@ -1,45 +1,40 @@
-# Fin - Crypto Research Buddy
+# Fin frontend
 
-A frontend-only, ocean-themed crypto research desk built with React 18, TypeScript, and Vite. No additional dependencies, remote fonts, images, or scripts. Fin's original inline SVG dolphin gently bobs and moves its tail; all animations respect `prefers-reduced-motion`.
+The React app for Fin. React 18, TypeScript and Vite, with no UI or chart libraries. The mascot and charts are inline SVG.
 
-## Run
+## Run it
 
-Requires Node 20.19+ or 22.12+ (current LTS recommended). Vite and its React plugin were upgraded from the original prototype to resolve reported dependency advisories. Use `npm ci` for the checked-in lockfile.
+You need Node 20.19+ or 22.12+.
 
-```sh
+```bash
 npm ci
-npm run dev
-npm run build
-npm run preview
+npm run dev        # http://localhost:5173
+npm run build      # type-check, then production build
+npm test           # node --test, no browser needed
+npm run lint       # oxlint
+npm run typecheck
 ```
 
-The existing Vite development proxy forwards `/api` to `http://localhost:8000`. Run the backend separately. For production (including `npm run preview`), serve the frontend behind a same-origin reverse proxy that routes `/api` to the backend. The frontend uses relative API paths; it does not contain backend implementation or credentials.
+The app calls relative `/api/v1/...` paths. In development Vite proxies them to `localhost:8000`, so start the backend too. In production the host has to forward `/api` to the backend (`vercel.json` does this on Vercel, see [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md)).
 
-## Backend contract
+## How it works
 
-- `GET /api/v1/assets`: featured catalog; `GET /api/v1/assets/search?q=...`: bounded candidates; `GET /api/v1/assets/{id}`: full identity with available platforms/contracts. Debounced abortable search never auto-selects a candidate, and detail failure never substitutes another asset.
-- `POST /api/v1/crypto-analysis`: JSON `{ asset_id, question, profile? }`. Returns visible question echo, structured answer sections, applied profile/tailored notes, sourced pros/cons/unknowns and existing market/risk/source fields. Snapshot mode remains `deterministic`.
-- `GET /api/v1/chat/config` and `POST /api/v1/chat`: separate Gemini free-tier crypto conversation with optional asset context, disabled hosted-profile sharing, safe citations, limitations, model and answered/out-of-scope/unavailable status.
-- `GET /api/v1/crypto-history/{asset_id}?timeframe=1d|1w|1m|1y`: independent USD history with points, provider, coverage, sampling, warnings, retrieval time, period change, and maximum drawdown.
+- **One page, local state.** `App.tsx` holds the state. There's no router or store.
+- **Stale responses are ignored.** Every request has an `AbortController` and a version number, so cancelling really cancels and an old response can't replace a new one.
+- **The API is not trusted.** Responses go through hand-written validators in `src/lib/cryptoApi.ts` and `chatApi.ts` before anything renders. The types in `src/types/` mirror the backend schemas.
+- **Charts load separately.** After an analysis, the price chart fetches its own history. Switching timeframes or retrying only calls the history endpoint.
+- **Nothing is made up.** Missing values show as "Unavailable". There are no mock prices, and external links only allow `http` and `https`.
 
-Requests use native `fetch`, cancellation and readable validation/network errors. Research/history time out after 20 seconds; chat has a separate 60-second timeout. No prices, assets, source links or disabled-model answers are substituted with mocks.
+## Privacy
 
-## Research flow and disclosures
+The research profile is saved in `localStorage` only if the user ticks the opt-in box, and Reset deletes it. The profile is never sent to the chat. Chat history lives in page memory only, and sharing the analyzed asset with the chat needs its own opt-in.
 
-Search/select a canonical crypto asset and optionally include a qualitative research profile. Snapshot answers are deterministic and disclose unsupported topics. Profile preferences save only with browser-storage opt-in; reset deletes preferences and revokes hosted sharing. No opaque suitability score or trading instructions are presented.
+## Chart and accessibility
 
-Crypto chat is independent of a completed analysis. It sends questions and selected prior messages to Gemini; asset context requires opt-in. Saved profile fields are never serialized into free chat, including stale consent requests. API config requires `provider:gemini` and `profile_sharing:disabled_free_tier`; a response claiming profile application is rejected. Chat remains unavailable without server-side free-key/confirmation setup. Unpaid prompts/responses may improve Google products and be human reviewed; users are warned not to enter personal/financial/confidential data. There is no paid fallback and the client cannot inspect project billing. History is page-memory only; clearing it cannot delete provider data. Future history filters mismatched assets and previously shared-profile turns. Questions max2000, prior messages max12/4000 characters each, aggregate input16000; whole oversized turns are not resent. Answers up to8000 characters display without truncation. Citation-ID validation and mocked scope tests are not factual/semantic guarantees.
+The SVG chart plots real elapsed time on the x-axis, not observation order. It drops invalid or duplicate points and says when it did. Y-axis precision adapts to small coins. There's a text table of the exact values behind every chart.
 
-Submitting a new request clears previous results and unmounts/cancels the previous history request. Cancelled and stale analysis responses cannot replace the current request. Price history first loads after successful analysis, defaults to one week, and follows the **analyzed** asset, not an unsubmitted selector change. Switching timeframes or retrying history only calls the history endpoint, never analysis. Previous chart data is cleared during loading; failed/empty history does not remove the overview.
+Also in place: a skip link, live regions for status and errors, visible focus, reduced-motion support and a layout that works on phones.
 
-The snapshot includes price, change, valuation, volume/scope, supplies, range, and all-time-high context, with provider and UTC timestamps. Missing/nonfinite values display `Unavailable`, not zero; maximum supply being unavailable is not interpreted as unlimited. Risk panels, original source links, freshness metadata, and both overview/history warnings remain visible. External links allow only HTTP(S) and open with `noopener noreferrer`.
+## Tests
 
-## Native chart and accessibility
-
-SVG horizontal positions reflect actual elapsed time, not observation indexes. Invalid timestamps, nonfinite/negative prices, and duplicate timestamps are removed, with an omission warning; observations are sorted chronologically. Single observations render a centered dot and flat series render a centered line. Y-axis labels show actual minimum/maximum values with adaptive USD precision for small coins. UTC date/time labels, SVG title/description, a scrollable exact-observation table, provider labels, and loading/error/empty states accompany every timeframe.
-
-Keyboard-friendly native form controls, visible focus rings, a skip link, status/alert announcements, reduced motion, and responsive layouts are included. On narrow screens the time-based chart scrolls horizontally to keep labels readable.
-
-## Verification
-
-`npm run build` strictly type-checks and creates `dist/`. Run `npm test` for dependency-free regression checks using the existing TypeScript compiler. For optional real-browser integration, install Python Playwright and its Chromium dependencies, stop other servers on ports 8000/5173, and run `python3 frontend/tests/browser_smoke.py` from project root. It starts/stops local servers, uses live providers, and checks chart timeframes, history-only requests, mobile overflow and reduced motion. This browser check also depends on available provider data. The app contains no mock mode.
+56 tests run through `node --test`. They load the real source files with the TypeScript compiler and a small stand-in for React's hooks, so they're fast but aren't a real browser. There's also an optional Playwright check, `tests/browser_smoke.py`, which starts both servers and uses live providers. It needs Playwright and Chromium installed, and ports 8000 and 5173 free.

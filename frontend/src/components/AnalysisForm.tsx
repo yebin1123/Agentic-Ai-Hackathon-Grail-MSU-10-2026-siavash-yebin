@@ -25,21 +25,15 @@ const prompts = [
 ]
 
 export function AnalysisForm({ assets, assetsLoading, assetsError, onRetryAssets, onSubmit, onCancel, isLoading, lastSubmitted, onProfileChange, onProfileReset }: Props) {
-  const [selected, setSelected] = useState<Asset | null>(assets[0] ?? null)
+  const [chosen, setSelected] = useState<Asset | null>(null)
+  const selected = chosen ?? assets[0] ?? null
   const [detailLoading, setDetailLoading] = useState(false)
-  const [profile, setProfile] = useState(defaultProfile)
+  const [stored] = useState(loadProfile)
+  const [profile, setProfile] = useState(() => stored.profile ?? defaultProfile())
   const [profileEnabled, setProfileEnabled] = useState(false)
   const [remember, setRemember] = useState(false)
-  const [storageError, setStorageError] = useState<string | null>(null)
+  const [storageError, setStorageError] = useState<string | null>(stored.error)
   const [question, setQuestion] = useState(prompts[0].question)
-  useEffect(() => {
-    if (!selected && assets.length) setSelected(assets[0])
-  }, [assets, selected])
-  useEffect(() => {
-    const saved = loadProfile()
-    if (saved.profile) setProfile(saved.profile)
-    setStorageError(saved.error)
-  }, [])
   useEffect(() => { onProfileChange?.(normalizeProfile(profile)) }, [profile, onProfileChange])
   const updateProfile = (value: ResearchProfile) => {
     setProfile(value)

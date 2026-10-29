@@ -1,7 +1,7 @@
 import type { ResearchProfile } from '../types/crypto'
 import { profileOptions } from '../lib/profile'
 
-export const profileLabels = {
+const profileLabels = {
   experience: 'Crypto experience', goal: 'Research goal', horizon: 'Research horizon',
   loss_tolerance: 'Willingness to accept losses', loss_capacity: 'Ability to absorb losses',
   liquidity_need: 'Need to access funds', explanation: 'Explanation style',

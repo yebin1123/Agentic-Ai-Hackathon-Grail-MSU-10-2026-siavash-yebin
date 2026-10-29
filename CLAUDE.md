@@ -109,6 +109,7 @@ Backend venv lives at `backend/.venv` (gitignored).
 - Remote: `origin` = `yebin1123/Agentic-Ai-Hackathon-Grail-MSU-10-2026-siavash-yebin`. Work on branches; no force pushes to `main`.
 - Tag `pre-merge-main` marks `main` before local work was merged in. Don't move or delete it.
 - Commit and push only when asked.
+- Do not add `Co-Authored-By` trailers or "Generated with Claude Code" footers to commits or PR descriptions. AI assistance is disclosed once, in the README.
 - Plain `git push` over HTTPS fails in this terminal. Use `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push`, or run `gh auth setup-git` once.
 
 ## Before saying "done"
