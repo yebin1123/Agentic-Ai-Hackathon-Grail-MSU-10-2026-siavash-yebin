@@ -1,0 +1,14 @@
+# Render Blueprint: backend API on the free plan.
+# The Gemini chat stays disabled because no GEMINI_API_KEY is set here.
+services:
+  - type: web
+    name: fin-crypto-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
