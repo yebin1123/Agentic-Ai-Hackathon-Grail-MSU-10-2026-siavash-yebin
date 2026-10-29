@@ -74,6 +74,8 @@ From backend with its virtual environment active: `python -m pytest -q`. From fr
 
 ## Architecture
 
+For the full picture, with a diagram, a request walkthrough and the reasoning behind each choice, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 - React / TypeScript / CSS / Vite frontend, native SVG charts and mascot, opt-in profiles, debounced candidate search and separate session chat; no chart SDK.
 - FastAPI / Pydantic / HTTPX backend with asynchronous parallel retrieval, pooled HTTP connections, wall-clock deadlines and a short per-process cache.
 - CoinGecko: aggregated crypto quote, supply, cap, FDV and history. Optional Demo/Pro key support.
