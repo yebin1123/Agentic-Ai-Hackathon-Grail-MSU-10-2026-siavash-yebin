@@ -6,18 +6,19 @@ Findings from a read-through of the repo. Items marked **done** were applied in 
 - Removed dead stock-era backend/frontend code and the stale stock tests (4 of them were failing against the 410 route).
 - Untracked `.idea/` and the hackathon zip.
 - Added `lint`/`typecheck` scripts, `requirements-dev.txt`, `.env.example`, CI, `CLAUDE.md`.
+- Tightened `Risk.severity` to a union type, trimmed `FRONTEND_ORIGINS`, restricted CORS headers to `Content-Type` (with tests), fixed two lint warnings.
 
 ## Proposals
 
 ### Quick wins
 1. **One fetch wrapper.** `requestJson` (`cryptoApi.ts`) and `chatJson` (`chatApi.ts`) are near-duplicates; merge into one with `{timeoutMs, label}`. Same for the two URL-safety helpers in `format.ts` and `links.ts`.
-2. **Tighten types.** `Risk.severity` is `string` on the frontend but a literal union on the backend. Make `Source.publisher` and `submitted_question` match the backend too.
+2. **Tighten types.** `Source.publisher` and `submitted_question` still differ slightly from the backend schema (`Risk.severity` is done).
 3. **Don't cache failures for the full TTL** in `tools/crypto_data.py`; use a short negative cache.
 4. **Log with `request_id`.** The unhandled-exception handler returns a request id that appears nowhere in logs, and `chat()` swallows exceptions silently.
-5. **Trim `allow_headers=["*"]`** and strip whitespace when splitting `FRONTEND_ORIGINS`.
 6. **`VITE_API_BASE_URL`** for deployments without a same-origin `/api` proxy.
 
 ### Medium
+6b. **Remaining 7 lint warnings** (`set-state-in-effect`): effects that set "loading" state when a fetch starts (`App.tsx`, `AssetPicker.tsx`, `PriceChart.tsx`, `CryptoChat.tsx`, `AnalysisForm.tsx`). A small shared data-fetching hook (or TanStack Query) would remove most of them and the duplicated abort/version logic.
 7. **Cache chart history** per `(asset, timeframe)` and keep the old chart visible while a new timeframe loads (currently flashes empty).
 8. **Generate frontend types from `/openapi.json`** (or validate with zod) to stop hand-maintained drift.
 9. **Settings class + `Depends` services** instead of module-level singletons mutated in the lifespan.

@@ -1,6 +1,23 @@
 # Fin • Crypto Research Buddy
 
+[![CI](https://github.com/yebin1123/Agentic-Ai-Hackathon-Grail-MSU-10-2026-siavash-yebin/actions/workflows/ci.yml/badge.svg)](https://github.com/yebin1123/Agentic-Ai-Hackathon-Grail-MSU-10-2026-siavash-yebin/actions/workflows/ci.yml)
+
 A crypto-only market research dashboard with an animated dolphin companion, provider-attributed metrics, question-specific snapshot answers, and independent **1D / 1W / 1M / 1Y** USD charts.
+
+## At a glance
+
+| | |
+|---|---|
+| **What it is** | A full-stack web app that helps people research a crypto asset: market snapshot, price history, risks, sources and an optional AI chat. It is informational only and never trades. |
+| **Frontend** | React 18, TypeScript, Vite, hand-written SVG charts (no chart library) |
+| **Backend** | Python, FastAPI, Pydantic, async HTTPX with pooled connections, TTL cache |
+| **Data** | CoinGecko (with Coinbase fallback) and Google News RSS |
+| **AI** | Optional Gemini free-tier chat with citation validation, a model allowlist and a daily cap |
+| **Quality** | 244 backend tests and 56 frontend tests that make no real network calls; GitHub Actions CI runs lint, typecheck, tests and build, and `main` requires it to pass |
+
+## Team and history
+
+Built at the Agentic AI Hackathon (Grail / MSU, October 2026) by **Yebin** and **Siavash** ([@siavash96](https://github.com/siavash96)). Siavash wrote the original backend prototype. Since the hackathon, Yebin has continued the project alone: the crypto redesign, frontend, tests, CI and tooling. The full commit history is preserved, so contributions are visible in the git log.
 
 **Two distinct modes:** snapshot research remains rule-based, with metric-specific answers and limitations. Separate Gemini free-tier chat can explain directly-crypto questions when an operator configures a free API key and confirms an unpaid project with billing disabled. No paid-provider fallback exists. No template is mislabeled AI. General explanations use model knowledge; current claims should use supplied snapshot/headline evidence. Headlines are not full articles. It never trades, certifies suitability or promises returns. Live model quality and scope behavior have not been evaluated yet.
 
@@ -16,9 +33,7 @@ Submitted questions are now visible above topic-specific answers, rather than hi
 - Search goes beyond the eight featured coins via CoinGecko. Select candidates by canonical ID; full detail shows available chain/contracts. Coverage is not literally every crypto. DEX-only token support is proposed, not implemented.
 - Potential strengths, concerns and unknowns use attributable snapshot values and source IDs. Lists vary with the asset/data and can be empty; these are limited research signals, not a comprehensive project thesis.
 
-## Team
-
-Yebin — frontend and integration. Siavash — original backend. Developed with Grail coding-agent assistance following the MSU hackathon prototype.
+Developed with Grail coding-agent assistance following the MSU hackathon prototype.
 
 ## Run locally (Mac / IntelliJ)
 
@@ -70,7 +85,7 @@ Open **http://localhost:5173** (or the port Vite prints). Health: http://localho
 
 ## Test
 
-From backend with its virtual environment active: `python -m pytest -q`. From frontend: `npm test` and `npm run build`. Backend tests use synthetic fixtures and no public network.
+From backend with its virtual environment active: `python -m pytest -q`. From frontend: `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`. Backend tests use synthetic fixtures and no public network. The same checks run in GitHub Actions on every pull request.
 
 ## Architecture
 

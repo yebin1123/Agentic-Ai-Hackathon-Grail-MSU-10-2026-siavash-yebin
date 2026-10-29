@@ -24,7 +24,7 @@ function App() {
   const [assetsLoading, setAssetsLoading] = useState(true)
   const [assetsError, setAssetsError] = useState<string | null>(null)
   const [catalogAttempt, setCatalogAttempt] = useState(0)
-  const [completed, setCompleted] = useState<{ request: CryptoAnalysisRequest; response: CryptoAnalysisResponse } | null>(null)
+  const [completed, setCompleted] = useState<{ request: CryptoAnalysisRequest; response: CryptoAnalysisResponse; runId: number } | null>(null)
   const result = completed?.response
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +71,7 @@ function App() {
     setLastSubmitted(request)
     try {
       const response = await analyzeCrypto(request, controller.signal)
-      if (!controller.signal.aborted && version === requestVersion.current) setCompleted({ request, response })
+      if (!controller.signal.aborted && version === requestVersion.current) setCompleted({ request, response, runId: version })
     } catch (err) {
       if (!controller.signal.aborted && version === requestVersion.current) setError(err instanceof Error ? err.message : 'Could not prepare the crypto overview. Please try again.')
     } finally {
@@ -102,7 +102,7 @@ function App() {
         <ResearchContext request={completed.request} response={result} />
         <ProsCons response={result} />
         <MarketSnapshotCard snapshot={result.market_snapshot} />
-        <PriceChart key={`${requestVersion.current}-${result.asset.id}`} asset={result.asset} />
+        <PriceChart key={`${completed.runId}-${result.asset.id}`} asset={result.asset} />
         <RisksList risks={result.risks} />
         <SourcesList sources={result.sources} />
         <WarningsBanner warnings={result.meta.warnings} generatedAt={result.meta.generated_at} dataAsOf={result.meta.data_as_of} />
