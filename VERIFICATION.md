@@ -2,10 +2,17 @@
 
 ## Passing checks
 
-- Backend: `python3 -m pytest -q` — **240 passed**, one upstream Starlette warning about its HTTPX TestClient dependency. HTTPX blockers prevent live requests. Includes existing identity/profile/research tests plus129 Gemini chat tests: native request/response, free-tier confirmation/allowlist, header key handling, ignored OpenAI config, disabled hosted profiles, quotas/no paid fallback, validation, admission/cancellation and pool isolation.
+- Backend: `python3 -m pytest -q` — **240 passed**, one upstream Starlette warning about its HTTPX TestClient dependency. HTTPX blockers prevent live requests. Includes existing identity/profile/research tests plus 129 Gemini chat tests: native request/response, free-tier confirmation/allowlist, header key handling, ignored OpenAI config, disabled hosted profiles, quotas/no paid fallback, validation, admission/cancellation and pool isolation.
 - Frontend: `npm run build` — strict TypeScript and Vite production build succeed.
 - Frontend: `npm test` — **56 passed**: existing geometry/profile/search checks plus Gemini config, disabled profile sharing, stale-profile stripping, rejected false profile-application claims, privacy/terms notices, context filtering, quotas, limits and cancellation. These are rendered/simulated component checks, not Chromium browser tests.
 - Frontend: `npm audit` — **0 reported vulnerabilities** at verification time. This is not a guarantee against future advisories.
+
+## Re-verified 2026-10-28 (macOS, Python 3.11, after removing dead stock code)
+
+- Backend `python3 -m pytest -q`: 240 passed (the 4 stale `test_stock_analysis.py` tests that failed against the 410 route were removed).
+- Frontend `npm test`: 56 passed; `npm run build` and `npm run typecheck` succeed.
+- Frontend `npm run lint` (oxlint): exits 0 with pre-existing React warnings (`set-state-in-effect`, `refs`, `only-export-components`) that have not been addressed.
+- Not run: Playwright browser tests, live Gemini or provider calls.
 
 ## Live provider checks in this workspace
 

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "lint": "oxlint",
+    "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -18,6 +20,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "5.2.0",
+    "oxlint": "^1.90.0",
     "typescript": "5.9.3",
     "vite": "7.3.7"
   },

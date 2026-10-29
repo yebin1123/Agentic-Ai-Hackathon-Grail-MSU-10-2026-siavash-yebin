@@ -22,7 +22,7 @@ The existing Vite development proxy forwards `/api` to `http://localhost:8000`. 
 - `GET /api/v1/chat/config` and `POST /api/v1/chat`: separate Gemini free-tier crypto conversation with optional asset context, disabled hosted-profile sharing, safe citations, limitations, model and answered/out-of-scope/unavailable status.
 - `GET /api/v1/crypto-history/{asset_id}?timeframe=1d|1w|1m|1y`: independent USD history with points, provider, coverage, sampling, warnings, retrieval time, period change, and maximum drawdown.
 
-Requests use native `fetch`, cancellation and readable validation/network errors. Research/history time out after20 seconds; chat has a separate60-second timeout. No prices, assets, source links or disabled-model answers are substituted with mocks.
+Requests use native `fetch`, cancellation and readable validation/network errors. Research/history time out after 20 seconds; chat has a separate 60-second timeout. No prices, assets, source links or disabled-model answers are substituted with mocks.
 
 ## Research flow and disclosures
 
