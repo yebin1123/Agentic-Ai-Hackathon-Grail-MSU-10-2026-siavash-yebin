@@ -1,1 +1,1 @@
-"""API routes for the stock research backend."""
+"""Crypto research and price-history API routes."""

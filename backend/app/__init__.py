@@ -1,1 +1,1 @@
-"""Backend package for the stock research buddy API."""
+"""Backend package for Fin, the crypto research buddy API."""

@@ -1,1 +1,1 @@
-"""Schema models for stock research responses and requests."""
+"""Typed crypto research request, snapshot and history models."""

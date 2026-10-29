@@ -1,26 +1,20 @@
+import { formatTimestamp } from '../lib/format'
+
 type WarningsBannerProps = {
   warnings: string[]
   generatedAt: string
   dataAsOf: string | null
 }
 
-const formatTimestamp = (value: string | null) => {
-  if (!value) return 'Unavailable'
-  return new Date(value).toLocaleString()
-}
-
 export function WarningsBanner({ warnings, generatedAt, dataAsOf }: WarningsBannerProps) {
   return (
     <article className="card card--warnings">
-      <p className="section-label">Freshness and caveats</p>
-      <h2>Timestamps and warnings</h2>
+      <h2>Data notes</h2>
 
-      {warnings.length === 0 ? (
-        <p className="empty-copy">No warnings were returned.</p>
-      ) : (
+      {warnings.length > 0 && (
         <ul className="warning-list">
-          {warnings.map((warning) => (
-            <li key={warning} className="warning-item">
+          {Array.from(new Set(warnings)).map((warning, index) => (
+            <li key={`${index}-${warning}`} className="warning-item">
               <p className="meta-copy">{warning}</p>
             </li>
           ))}

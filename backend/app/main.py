@@ -1,28 +1,50 @@
 from __future__ import annotations
 
 import uuid
+import os
+import logging
+from contextlib import asynccontextmanager
 from typing import Any
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.routes.stock_analysis import router as stock_router
+from app.routes.crypto_analysis import router, service
+from app.routes.crypto_chat import router as chat_router, service as chat_service
 
 
-app = FastAPI(title="Stock Research Buddy API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app):
+    async with httpx.AsyncClient(timeout=3, headers={"User-Agent": "FinCryptoResearch/0.2"}, limits=httpx.Limits(max_connections=20, max_keepalive_connections=10)) as client:
+        async with httpx.AsyncClient(timeout=chat_service.model_timeout, limits=httpx.Limits(max_connections=2, max_keepalive_connections=2)) as model_client:
+            service.provider.client = client
+            chat_service.model_client = model_client
+            try:
+                yield
+            finally:
+                chat_service.model_client = None
+                service.provider.client = None
+
+
+app = FastAPI(title="Fin Crypto Research API", version="0.5.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=os.getenv("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","),
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
-app.include_router(stock_router)
+app.include_router(router)
+app.include_router(chat_router)
+
+
+@app.exception_handler(Exception)
+async def unexpected_exception_handler(_: Request, exc: Exception):
+    logging.getLogger(__name__).error("Unhandled backend error", exc_info=exc)
+    return JSONResponse(status_code=500, content={"error": {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred. Please retry.", "request_id": str(uuid.uuid4())}})
 
 
 @app.exception_handler(RequestValidationError)
