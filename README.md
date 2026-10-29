@@ -33,7 +33,7 @@ Submitted questions are now visible above topic-specific answers, rather than hi
 - Search goes beyond the eight featured coins via CoinGecko. Select candidates by canonical ID; full detail shows available chain/contracts. Coverage is not literally every crypto. DEX-only token support is proposed, not implemented.
 - Potential strengths, concerns and unknowns use attributable snapshot values and source IDs. Lists vary with the asset/data and can be empty; these are limited research signals, not a comprehensive project thesis.
 
-Developed with Grail coding-agent assistance following the MSU hackathon prototype.
+Developed with Grail coding-agent assistance following the MSU hackathon prototype. Later work was built with AI coding assistance (Claude Code); Yebin reviews the changes and is responsible for the code.
 
 ## Run locally (Mac / IntelliJ)
 
