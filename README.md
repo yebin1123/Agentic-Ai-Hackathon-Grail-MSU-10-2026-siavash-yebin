@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/yebin1123/Agentic-Ai-Hackathon-Grail-MSU-10-2026-siavash-yebin/actions/workflows/ci.yml/badge.svg)](https://github.com/yebin1123/Agentic-Ai-Hackathon-Grail-MSU-10-2026-siavash-yebin/actions/workflows/ci.yml)
 
+**Live demo: https://agentic-ai-hackathon-grail-msu-10-2-two.vercel.app**
+
+The backend runs on a free plan that sleeps when idle, so the first load after a quiet period can take 30 seconds or so.
+
 Fin is a crypto research dashboard. You pick a coin, ask a question, and get back live market data, price charts, risks and linked sources. It never trades and doesn't give advice.
 
 It started as a two-person hackathon project, and I've kept building it since.
